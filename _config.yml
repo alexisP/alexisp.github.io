@@ -1,7 +1,7 @@
 title: "Alexis Plantin - Blog"
 email: mvolwznz
 timezone: UTC
-baseurl: "alexisplantin.fr"
+baseurl: ""
 permalink: "/:title/"
 logo: 'assets/images/logo-ap.png'
 favicon: 'assets/images/favicon-32x32.png'
