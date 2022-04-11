@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link rel="icon" href="{{ site.baseurl }}/{{site.favicon}}">
+
+<title>{{ page.title }} | {{site.title}}</title>
+
+{% seo %}
+
+<link href="{{ site.baseurl }}/assets/css/theme.css" rel="stylesheet">
+
+<!-- custom CSS - Remove this if you don't use it or choose to customize the stylesheet with sass-->
+<link href="{{ site.baseurl }}/assets/css/custom.css" rel="stylesheet">
+<!-- custom CSS end-->
+    
+{% if jekyll.environment == "production" %}       
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={{site.ganalytics}}"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '{{site.ganalytics}}');
+</script>
+{% endif %}
+   
+</head>   
+    
+{% capture layout %}{% if page.layout %}layout-{{ page.layout }}{% endif %}{% endcapture %}
+<body class="{{ layout }}">
+
+    
+<!-- Menu Navigation
+================================================== -->
+<div class="navigation-wrap start-header start-style">
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+
+          <a class="navbar-brand text-dark font-weight-bold big d-flex align-items-center" href="{{site.baseurl}}/">
+          
+          <span class="d-none d-md-inline-block">{{ site.title }}</span>
+          </a> | 
+          
+
+          <div class="d-flex align-items-center">
+            
+            <span class="ml-3 text-muted small">Follow</span>
+
+            <a class="d-inline-block social-icon" target="_blank" href="{{site.social.linkedin}}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+              </svg> 
+            </a>
+            
+          </div>
+    
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+              <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zm0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+            </svg>
+          </button>
+          
+          <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto font-weight-bold d-flex align-items-center">
+              {% for item in site.data.menus.topmenu %}
+              <li class="nav-item">
+                <a class="nav-link px-3 {% if item.class %}{{item.class}}{% endif %}" href="{% unless item.external %}{{site.baseurl}}/{% endunless %}{{item.url}}" alt="{{item.title}}">{{item.title}}</a>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+        </div>
+      </nav>
+    </div>  
+
+    
+<!-- Container
+================================================== -->    
+<main class="container">   
+      {{ content }}  
+</main>
+
+<!-- Footer
+================================================== -->    
+<footer class="footer container text-center">  
+
+  <!-- CREDITS BEGIN.-->
+  <!-- If you want to support my work, please donate to remove the credits. This helps me keep it up and running: https://www.wowthemes.net/donate/ -->
+  <div class="credits mx-auto text-center mb-3">
+    <a class="hover-opacity font-weight-bold" href="https://bootstrapstarter.com/template-affiliates-bootstrap-jekyll/">
+      <img src="{{site.baseurl}}/assets/images/credits.png" alt="powered by WowThemes">
+    </a>
+  </div>
+  <!-- CREDITS END -->
+
+  <ul class="p-0 mb-1 small">
+    {% for item in site.data.menus.footermenu %}
+    <li>
+      <a href="{% unless item.external %}{{site.baseurl}}/{% endunless %}{{item.url}}" alt="{{item.title}}">{{item.title}}</a>
+    </li>
+    {% endfor %}
+    </ul>
+    <div class="copyright small">
+       Copyright © {{site.title}}. All rights reserved.
+    </div>
+</footer>
+
+<!-- JavaScript
+================================================== -->    
+<script src="{{ site.baseurl }}/assets/js/jquery.min.js"></script>   
+<script src="{{ site.baseurl }}/assets/js/bootstrap.min.js"></script>   
+<script src="{{ site.baseurl }}/assets/js/theme.js"></script>    
+    
+</body>
+    
+</html>

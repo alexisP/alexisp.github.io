@@ -1,0 +1,48 @@
+title: "Alexis Plantin - Blog"
+email: mvolwznz
+timezone: UTC
+baseurl: ""
+permalink: "/:title/"
+logo: 'assets/images/logo-ap.png'
+favicon: 'assets/images/favicon-32x32.png'
+author: Alexis Plantin
+paginate: 30
+disqus: 'demowebsite'
+locale: en_us
+lang: en_us
+feed_items: 10
+feed_update_period: daily
+feed_update_frequency: 1
+markdown: kramdown
+kramdown:
+  syntax_highlighter_opts:
+    disable: true
+sass:
+  sass_dir: _sass
+  style: :compressed
+ganalytics: UA-113961478-1
+
+# Authors
+authors:
+  alexisplantin:
+    name: Alexis Plantin
+    display_name: Alexis Plantin
+    avatar: 'assets/images/profile_ap.png'
+    email: alexis.plantin@gmail.com
+    web: https://alexisplantin.fr
+    linkedin: https://www.linkedin.com/in/alexis-plantin
+
+# Social
+social:
+  linkedin: https://www.linkedin.com/in/alexis-plantin
+#  instagram: https://www.instagram.com/bootstrapstarter/
+#  facebook: https://www.facebook.com/bootstrapstartercom-346329609045284
+#  twitter: https://twitter.com/bstartercom
+
+# Plugins
+plugins: 
+- jekyll-paginate
+- jekyll-sitemap
+- jekyll-feed
+- jekyll-seo-tag
+- jekyll-archives
