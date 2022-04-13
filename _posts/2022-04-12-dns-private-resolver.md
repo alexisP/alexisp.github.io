@@ -16,9 +16,22 @@ This article aims at describing a new Azure service that has just been published
   <div class="col-md-4"></div>
 </section>
 
-To illustrate the service, we will start by describing the main components that already exist in the DNS ecosystem in Azure because several of this services will still be involved in an ideal target architecture. Then, we will start from a typical customer hybrid DNS architecture in Azure and we'll porogressively adapt it to use **Azure DNS Private resover** through various designs and options. The last part of this article will be devoted to show you how we can integrate Azure DNS Private resolver along with Azure Firewall to get some precious DNS insights.
+To illustrate the service, we will start by describing the main components that already exist in the DNS ecosystem in Azure because several of this services will still be involved in an ideal target architecture. Then, we will start from a typical customer hybrid DNS architecture in Azure and we'll progressively adapt it to use **Azure DNS Private resolver** through various designs and options. The last part of this article will be devoted to show you how we can integrate Azure DNS Private resolver along with Azure Firewall to get some precious DNS insights.
 
-// TOC
+- [Main Azure DNS components](#main-azure-dns-components)
+  - [168.63.129.16](#1686312916)
+  - [Azure Private DNS zone](#azure-private-dns-zone)
+  - [Azure Private endpoint](#azure-private-endpoint)
+- [A typical (but simplified) hybrid DNS architecture](#a-typical-but-simplified-hybrid-dns-architecture)
+  - [*onprem1.contoso.internal* resolution from *spoke1*](#onprem1contosointernal-resolution-from-spoke1)
+  - [*spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-spoke1)
+  - [*spoke1pgsingle.postgres.database.azure.com* resolution from *onprem1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-onprem1)
+  - [Challenges](#challenges)
+- [Azure DNS Private resolver](#azure-dns-private-resolver)
+  - [*hub-vm.contoso.azure* resolution from *spoke1*](#hub-vmcontosoazure-resolution-from-spoke1)
+  - [*spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-spoke1-1)
+  - [*spoke1pgsingle.postgres.database.azure.com* resolution from *onprem1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-onprem1-1)
+- [Conclusion](#conclusion)
 
 Main Azure DNS components
 =========================
@@ -57,11 +70,11 @@ As this article is oriented around DNS, the usage of Private Link/Private servic
 Here is a representation of a private endpoint deployed in our own Vnet and pointing to a PostgreSQL PaaS database instance
 
 <section class="row">
-  <div class="col-md-2"></div>
-  <div class="col-md-8">
+  <div class="col-md-3"></div>
+  <div class="col-md-6">
     <img src="../assets/images/dns-private-resolver/private-endpoint.png"/>
   </div>
-  <div class="col-md-2"></div>
+  <div class="col-md-3"></div>
 </section>
 
 The most important part to understand when dealing with private endpoint and PaaS services is that whether we use a public or a private IP address, we **MUST** always access the service with its FQDN name (because SNI is involved for security purposes) and this is why there is always a point around private ednpoint and DNS.
@@ -98,7 +111,7 @@ Now that we detailed the architecture, let's see some examples of DNS resolution
 This example is straightforward:
 - spoke1 send the query to the DNS ILB in the hub as defined in the DNS settings of the spoke01-vnet
 - DNS VM send the request to the on-premise LB because of its conditional forwarder configuration
-- on-premise DNS own the domain and cxan return the associated A record
+- on-premise DNS own the domain and can return the associated A record
 
 *spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*
 ---------------------------------------------------------------------
@@ -116,4 +129,78 @@ This example is straightforward:
 
 ![image]({{ site.baseurl }}/assets/images/dns-private-resolver/pgsingle-from-onprem1.gif)
 
-This time, the resolution is a mixmatch of the two previous examples: conditional forwarder from on-premise to Azure for the private link DNS zone & private DNZ zone linked to the hub Vnet where IaaS DNS servers stand
+This time, the resolution is a mixmatch of the two previous examples: conditional forwarder from on-premise to Azure for the private link DNS zone & private DNS zone linked to the hub Vnet where IaaS DNS servers stand
+
+Challenges
+----------
+
+This architecture is actually working pretty well but, to be honest, it has some drawbacks:
+- customer still have to deploy a IaaS based architecture in its Azure infrastructure to manage efficiently Azure related domains and to get benefit from Vnet Links for private DNS zones and enable private link resolution from on-premise
+- these VMs lifecycle must still be managed (patching, upgrades, ...)
+- the DNS solution they own must be configured somehow to manage A records but also to define conditional and default forwarders
+
+Azure DNS Private resolver
+==========================
+
+Based on the challenges described above, Microsoft introduces a brand new managed service that elimite all this extrawork: Azure DNS Private resolver. It enable users to query Azure private DNS zones from on-premise environment and vice versa without deployed IaaS DNS servers. The service is fully managed by Microsoft and is highly available by nature. Moreover, it is really easy to deploy, to configure and to use.
+
+The service comes with two kind of Azure resources:
+- **DNS Private resolver:** the service reference one (and only one) Vnet and it needs two subnets (the recommended mask for the subnets is /28)
+  - an inbound subnet to provision inbound endpoints
+  - an outbound subnet to provision outbound endpoints
+- **DNS Forwarding Ruleset**
+  - as it name suggests, it is a collection of DNS forwarding rules (up to 1000)
+  - it can be linked to one or more Vnets
+
+<section class="row">
+  <div class="col-md-2"></div>
+  <div class="col-md-8">
+    <img src="../assets/images/dns-private-resolver/dns-private-resolver.png"/>
+  </div>
+  <div class="col-md-2"></div>
+</section>
+
+Once a DNS Forwarding Ruleset is attached to the Vnet, the way the resolution is working is very similar to the Azure private DNS zone workflow:
+1. The VM send the DNS query to the configured DNS server (Azure-provided) just correspond to the **168.63.129.16** ip address
+2. The virtual DNS service looks if a forwarding rule associated to the requested domain exists
+3. If it exists, it send the query to the next hop ip address to pursue the resolution
+
+Now, that we've presented the service and its components, we can imagine several design and implementation depending on our requirements.
+
+![image]({{ site.baseurl }}/assets/images/dns-private-resolver/dns-private-resolver-architecture.png)
+
+As you can see in the schema, the IaaS DNS servers has gone and have been replaced by the DNS private resolver components. We then defined a Forwarding Ruleset attached to our hub Vnet with a forwarding rule to send all **contoso.internal** requests to **10.233.2.4:53** which is the internal IP of the on-premise DNS service. We also replaced the DNS settings of the Vnet to set the Azure-provided one.
+
+An alternate design consists in relying on the Azure-provided DNS settings not only on the hub but also on the spoke Vnets. We then need to link the forwarding ruleset to the spokes. In a manner, this is a centralized vs decentralised approach. The following schema represent this alternative
+
+![image]({{ site.baseurl }}/assets/images/dns-private-resolver/dns-private-resolver-architecture-2.png)
+
+As you probably notice, this architecture requires to have two different instances of the DNS Forwarding Ruleset because **contose.azure** and **privatelink.postgresql.database.azure.com** domain do not require forwarding rules to be resolved in the hub Vnet as they have their private DNS zones linked.
+
+*hub-vm.contoso.azure* resolution from *spoke1*
+---------------------------------------------------
+
+![image]({{ site.baseurl }}/assets/images/dns-private-resolver/private-dns-hub1-from-spoke1.gif)
+
+The DNS query is send to the DNS private resolver managed service instead of the DNS VMs. We have the resolution working from our private resolver because it is deployed in the hub Vnet that is linked to the **contoso.azure** private DNS zone.
+
+*spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*
+---------------------------------------------------------------------
+
+![image]({{ site.baseurl }}/assets/images/dns-private-resolver/private-dns-pgsingle-from-spoke1.gif)
+
+This is quite the same as before except that the DNS query is send to the DNS private resolver managed service. We have the resolution working from our private resolver because it is deployed in the hub Vnet that is linked to the **privatelink.postgres.database.azure.com** DNS zone.
+
+*spoke1pgsingle.postgres.database.azure.com* resolution from *onprem1*
+---------------------------------------------------------------------
+
+![image]({{ site.baseurl }}/assets/images/dns-private-resolver/private-dns-pgsingle-from-onprem1.gif)
+
+Even for on-premise, we do not need IaaS DNS servers in the hub Vnet anymore to resolve privatelink or private DNS zone records. This become much much easier and faster for users to setup their hybrid DNS infrastructure.
+
+Conclusion
+==========
+
+With this new DNS services, it is now straightforward to setup complex DNS architecture with several conditional forwarders between Azure and on-premise (and vice versa) and it becomes also easy to provide privatelink resolution capabilities from on-premise. As the usage of privatelink is becoming higher and higher, it was important for users to setup their DNS resolution is a simple way without having to manage on their own their old good VMs with DNS services. 
+
+In a future article, we'll describe how we can integrate the Azure DNS Private resolver service with Azure Firewall in order to get precious insights about DNS queries in our Azure ecosystem.
