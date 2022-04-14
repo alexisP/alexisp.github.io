@@ -16,7 +16,7 @@ This article aims at describing a new Azure service that has just been published
   <div class="col-md-4"></div>
 </section>
 
-To illustrate the service, we will start by describing the main components that already exist in the DNS ecosystem in Azure because several of this services will still be involved in an ideal target architecture. Then, we will start from a typical customer hybrid DNS architecture in Azure and we'll progressively adapt it to use **Azure DNS Private resolver** through various designs and options. The last part of this article will be devoted to show you how we can integrate Azure DNS Private resolver along with Azure Firewall to get some precious DNS insights.
+To illustrate the service, we will start by describing the main components that already exist in the DNS ecosystem in Azure because several of these services will still be involved in an ideal target architecture. Then, we will start from a typical customer hybrid DNS architecture in Azure and we'll progressively adapt it to use **Azure DNS Private resolver** through various designs and options.
 
 - [Main Azure DNS components](#main-azure-dns-components)
   - [168.63.129.16](#1686312916)
@@ -39,7 +39,7 @@ Main Azure DNS components
 168.63.129.16
 --------------
 
-What is it? When dealing with DNS in Azure (but not only DNS), you will deal with this very special IP. From a DNS point of view, it can be seen as a server that will be able to resolve both public and private DNS names from sources located in Azure. For more information avout this virtual IP address, please read [What is IP address 168.63.129.16?](https://docs.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16)
+What is it? When dealing with DNS in Azure (but not only DNS), you will deal with this very special IP. From a DNS point of view, it can be seen as a server that will be able to resolve both public and private DNS names from sources located in Azure. For more information about this virtual IP address, please read [What is IP address 168.63.129.16?](https://docs.microsoft.com/en-us/azure/virtual-network/what-is-ip-address-168-63-129-16)
 
 When we let the default configuration on Vnet or on network interfaces as seen in the following screenshot, we are basically saying that all our DNS queries will be send to this public IP
 
@@ -65,7 +65,7 @@ Azure Private endpoint
 
 Azure Private Link and Private endpoint is the solution to make PaaS service (deployed outside of customers network) private and to access it using customers private IP address. More information can be found [here](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-overview)
 
-As this article is oriented around DNS, the usage of Private Link/Private service from this perspective can be a little bit tricky and especially whith hybrid architecture and DNS resolution from the on-premise world. If you are interested in understanding all the options available and pros/cons of each, we highly recommend you to read [this article from Daniel Mauser](https://github.com/dmauser/PrivateLink/tree/master/DNS-Integration-Scenarios#41-which-conditional-forwarder-zone-should-be-used)
+As this article is oriented around DNS, the usage of Private Link/Private endpoint service from this perspective can be a little bit tricky and especially whith hybrid architecture and DNS resolution from the on-premise world. If you are interested in understanding all the options available and pros/cons of each, we highly recommend you to read [this article from Daniel Mauser](https://github.com/dmauser/PrivateLink/tree/master/DNS-Integration-Scenarios#41-which-conditional-forwarder-zone-should-be-used)
 
 Here is a representation of a private endpoint deployed in our own Vnet and pointing to a PostgreSQL PaaS database instance
 
@@ -77,7 +77,7 @@ Here is a representation of a private endpoint deployed in our own Vnet and poin
   <div class="col-md-3"></div>
 </section>
 
-The most important part to understand when dealing with private endpoint and PaaS services is that whether we use a public or a private IP address, we **MUST** always access the service with its FQDN name (because SNI is involved for security purposes) and this is why there is always a point around private ednpoint and DNS.
+The most important part to understand when dealing with private endpoint and PaaS services is that whether we use a public or a private IP address, we **MUST** always access the service with its FQDN name (because TLS and SNI are involved for security purposes) and this is why there is always a point around private endpoint and DNS.
 
 A typical (but simplified) hybrid DNS architecture
 ==================================================
@@ -87,9 +87,9 @@ This schema show the kind of architecture many companies have in place
 ![image]({{ site.baseurl }}/assets/images/dns-private-resolver/traditional-dns.png)
 
 The main points to notice here are:
-- we have the on-premise world which is interconnected with the Azure world and both have their dedicated DNS architecture
+- We have the on-premise world which is interconnected with the Azure world and both have their dedicated DNS architecture
 - Azure is made of a well-known hub and spoke architecture with DNS servers deployed in the hub
-- we represented the on-premise DNS architecture with a load balancer and 2 VMs to illustrate the high availability aspect of the service. They can be of many sort (InfoBlox, Efficent IP, domain controllers)
+- We represented the on-premise DNS architecture with a load balancer and 2 VMs to illustrate the high availability aspect of the service. They can be of many sort (InfoBlox, Efficent IP, domain controllers)
 - On-premise DNS servers
   - own a customer domain (or many): **contoso.internal** in our example
   - have conditional forwarder configured to send traffic into Azure IaaS DNS servers for several domains: Azure customer internal domain (**contoso.azure** here)
@@ -97,9 +97,8 @@ The main points to notice here are:
   - own the Azure customer internal domain (**contoso.azure** here)
   - have conditional forwarder for the main customer domain(s): **contoso.internal**
   - have a default forwarder for anything else that is pointing to the Azure magic IP address
-- Azure hub Vnet
-  - has a private DNS zone attached for the privatelink.postgres.database.azure.com domain (for Private Link / Private Endpoint resolution)
-  - is configured to send all DNS queries to **10.221.2.4** which is the IP address of the Internal Load-balancer of the Azure IaaS DNS servers
+- Azure hub Vnet has a private DNS zone attached for the **privatelink.postgres.database.azure.com** domain (for Private Link / Private Endpoint resolution)
+- All Azure Vnets are configured to send their DNS queries to **10.221.2.4** which is the IP address of the Internal Load-balancer of the Azure IaaS DNS servers
 
 Now that we detailed the architecture, let's see some examples of DNS resolution from different sources to some targets.
 
@@ -111,7 +110,7 @@ Now that we detailed the architecture, let's see some examples of DNS resolution
 This example is straightforward:
 - spoke1 send the query to the DNS ILB in the hub as defined in the DNS settings of the spoke01-vnet
 - DNS VM send the request to the on-premise LB because of its conditional forwarder configuration
-- on-premise DNS own the domain and can return the associated A record
+- on-premise DNS is authoritative on the domain and can return the associated A record
 
 *spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*
 ---------------------------------------------------------------------
@@ -120,16 +119,18 @@ This example is straightforward:
 
 2 things are important to understand in this example:
 - DNS2 sends the query to **168.63.129.16** in step 3 because no conditional forwarder are defined in the DNS configuration that match the domain so the query is then send to the default forwarder
-- The Azure DNS service is able to return the A record associated to spoke1pgsingle because
+- The Azure DNS service is able to return the A record associated to **spoke1pgsingle** because
   1. The DNS IaaS VM are in the hub Vnet
-  2. The private DNS zone for the postgres.database.azure.com is linked to this hub Vnet
+  2. The private DNS zone for the **postgres.database.azure.com** domain is linked to this hub Vnet
 
 *spoke1pgsingle.postgres.database.azure.com* resolution from *onprem1*
 ---------------------------------------------------------------------
 
 ![image]({{ site.baseurl }}/assets/images/dns-private-resolver/pgsingle-from-onprem1.gif)
 
-This time, the resolution is a mixmatch of the two previous examples: conditional forwarder from on-premise to Azure for the private link DNS zone & private DNS zone linked to the hub Vnet where IaaS DNS servers stand
+This time, the resolution is a combination of the two previous examples: 
+- there is a conditional forwarder from on-premise to Azure for the private link DNS zone
+- The private DNS zone **postgres.database.azure.com** is linked to the hub Vnet where IaaS DNS servers stand.
 
 Challenges
 ----------
@@ -145,7 +146,7 @@ Azure DNS Private resolver
 Based on the challenges described above, Microsoft introduces a brand new managed service that elimite all this extrawork: Azure DNS Private resolver. It enable users to query Azure private DNS zones from on-premise environment and vice versa without deployed IaaS DNS servers. The service is fully managed by Microsoft and is highly available by nature. Moreover, it is really easy to deploy, to configure and to use.
 
 The service comes with two kind of Azure resources:
-- **DNS Private resolver:** the service reference one (and only one) Vnet and it needs two subnets (the recommended mask for the subnets is /28)
+- **DNS Private resolver:** the service reference one (and only one) Vnet and it needs two subnets (the recommended masks for the subnets are /28)
   - an inbound subnet to provision inbound endpoints
   - an outbound subnet to provision outbound endpoints
 - **DNS Forwarding Ruleset**
@@ -161,9 +162,9 @@ The service comes with two kind of Azure resources:
 </section>
 
 Once a DNS Forwarding Ruleset is attached to the Vnet, the way the resolution is working is very similar to the Azure private DNS zone workflow:
-1. The VM send the DNS query to the configured DNS server (Azure-provided) just correspond to the **168.63.129.16** ip address
+1. The VM send the DNS query to the configured DNS server (Azure-provided) which correspond to the **168.63.129.16** ip address
 2. The virtual DNS service looks if a forwarding rule associated to the requested domain exists
-3. If it exists, it send the query to the next hop ip address to pursue the resolution
+3. If it exists, it send the query to the next hop ip address defined on the forwarding to pursue the resolution
 
 Now, that we've presented the service and its components, we can imagine several design and implementation depending on our requirements.
 
@@ -201,6 +202,6 @@ Even for on-premise, we do not need IaaS DNS servers in the hub Vnet anymore to 
 Conclusion
 ==========
 
-With this new DNS services, it is now straightforward to setup complex DNS architecture with several conditional forwarders between Azure and on-premise (and vice versa) and it becomes also easy to provide privatelink resolution capabilities from on-premise. As the usage of privatelink is becoming higher and higher, it was important for users to setup their DNS resolution is a simple way without having to manage on their own their old good VMs with DNS services. 
+With this new DNS service, it is now straightforward to setup complex DNS architecture with several conditional forwarders between Azure and on-premise (and vice versa) and it becomes also easy to provide privatelink resolution capabilities from on-premise. As the usage of privatelink is becoming higher and higher, it was important for users to setup their DNS resolution is a simple way without having to manage on their own their old good VMs with DNS services. 
 
 In a future article, we'll describe how we can integrate the Azure DNS Private resolver service with Azure Firewall in order to get precious insights about DNS queries in our Azure ecosystem.
