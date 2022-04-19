@@ -8,8 +8,10 @@ image: assets/images/connected-registry/connected-registry-architecture.png
 ---
 In this article, we will implement a connected registry architecture with an Azure container registry and we will detail the various available features and use cases connected registry can cover.
 
-Whenever we are working in a container-based environment, we need to build and push our applications images into container registries. We have a huge number of options in the market that provide registry capabilities (Harbor, Quay, ...) and even if their initial goal is to provide storage capabilities for images, they are enriched with additional features to ease developers and operators activities around image management (image security scan for vulnerabilities, role-based access control, content signing, ...). Azure provide a container registry solution called **Azure Container Registry (ACR)** and this article aims at presenting you a particular feature of ACR which is the connected registry. It is basically a way to 
-create a local/on-premise replicas of our container registry to improve performances and resiliency of local applications.
+Whenever we are working in a container-based environment, we need to build and push our applications images into container registries. We have a huge number of options in the market that provide registry capabilities (Harbor, Quay, ...) and even if their initial goal is to provide storage capabilities for images, they are enriched with additional features to ease developers and operators activities around image management (image security scan for vulnerabilities, role-based access control, content signing, ...). 
+
+Azure provide a container registry solution called **Azure Container Registry (ACR)** and this article aims at presenting you a particular feature of ACR which is the connected registry. It is basically a way to 
+create local/on-premise replicas of our container registry to improve performance and resiliency of local applications.
 
 - [Azure Container Registry](#azure-container-registry)
   - [Replications](#replications)
@@ -26,16 +28,18 @@ create a local/on-premise replicas of our container registry to improve performa
     - [Declare the connected registry in ACR](#declare-the-connected-registry-in-acr)
       - [Activate the dedicated data endpoint](#activate-the-dedicated-data-endpoint)
       - [Import required images in the registry](#import-required-images-in-the-registry)
-        - [Create the connected registry definifition](#create-the-connected-registry-definifition)
+        - [Create the connected registry definition](#create-the-connected-registry-definition)
     - [Deploy the connected registry module on the device](#deploy-the-connected-registry-module-on-the-device)
       - [Get the connection string and a sync token](#get-the-connection-string-and-a-sync-token)
       - [Fill the module deployment manifest](#fill-the-module-deployment-manifest)
       - [Deploy the connected registry](#deploy-the-connected-registry)
 - [Let's play with our connected registry](#lets-play-with-our-connected-registry)
-  - [ACR Scope map](#acr-scope-map)
+  - [Application repositories](#application-repositories)
+  - [Tokens & ACR Scope map](#tokens--acr-scope-map)
   - [Pull image from the device](#pull-image-from-the-device)
   - [Push image from the device](#push-image-from-the-device)
-  - [Links](#links)
+- [Conclusion](#conclusion)
+- [Links](#links)
 
 Azure Container Registry
 ========================
@@ -47,10 +51,10 @@ Azure provide an easy way to replicate our container registries in several Azure
 
 ![image]({{ site.baseurl }}/assets/images/connected-registry/acr-replication.png)
 
-This replication mechanism allows users to have multi master replicas of their registries. It helps improving performance by pushing images closer to whn they need to be pulled and it also improve the overall availability of the registry (ACR can be configured in a multi availability zone within a region) by storing images in multiple regions while making their access global with a unique URL.
+This replication mechanism allows users to have multi master replicas of their registries. It helps improving performance by pushing images closer from where they need to be pulled and it also improves the overall availability of the registry (ACR can be configured in a multi availability zone within a region) by storing images in multiple regions while making their access global with a unique URL.
 
 In most scenarios, this satisfies user requirements in terms of availability and performance but in some use cases, it can still be an inappropriate solution:
-- Poor bandwidth to download images (they should be light images, but are they really? :D)
+- Poor bandwidth to download images (it should be light images, but are they really? :D)
 - Factories/Sites with unstable/unreliable Internet connectivity
 - Occasionally connected/Air-gapped environments
 
@@ -81,7 +85,7 @@ IOT Hub
 The general definition of IOT Hub extracted from [IoT concepts and Azure IoT Hub](https://docs.microsoft.com/en-us/azure/iot-hub/iot-concepts-and-iot-hub)
 > Azure IoT Hub is a managed service hosted in the cloud that acts as a central message hub for communication between an IoT application and its attached devices. You can connect millions of devices and their backend solutions reliably and securely. Almost any device can be connected to an IoT hub.
 
-IOT Hub is a powerful solution around IOT management but, to be honest, in our case it will be of a limited help. We use this component because it is required to make a device an IOT Edge device on which we will be able to deploy our connected registry.
+IOT Hub is a powerful solution around IOT management but, to be honest, in our case it will be of a limited help. We only rely on this component because it is required to make a device an IOT Edge device on which we will be able to deploy our connected registry.
 
 Let's build our connected registry
 ==================================
@@ -100,9 +104,7 @@ Create an IOT Hub & IOT Edge device
 
 Once you IOT Hub is created (if you do not already have one) you have to declare the IOT Edge instance:
 
-```
-az iot hub device-identity create --device-id <iot-edge-device-id> --hub-name <iot-hub-name> --edge-enabled
-```
+`az iot hub device-identity create --device-id <iot-edge-device-id> --hub-name <iot-hub-name> --edge-enabled`
 
 with
 - `<iot-edge-device-id>` is a unique identifier that you must define in your IOT Hub
@@ -187,13 +189,18 @@ az acr import \
   --source mcr.microsoft.com/azureiotedge-diagnostics:1.2.4
 ```
 
-##### Create the connected registry definifition
+##### Create the connected registry definition
 
 Now, we can create the connected registry definition in our Azure container registry instance:
 
 ![image]({{ site.baseurl }}/assets/images/connected-registry/connected-registry-wizard.png)
 
-Note that we have lots of options available for synchronization behavior, ReadWrite or ReadOnly modes and repositories to synchronize. In our example, we choose to get a ReadWrite connected registry.
+Note that we have lots of options available for 
+- synchronization behavior
+- ReadWrite or ReadOnly modes
+- repositories to synchronize 
+
+In our example, we choose to get a ReadWrite connected registry.
 
 Once validated and saved, you will see that the status of the connected registry will be offline. So far, everything is normal as we did not deploy the connected registry module in our IOT Edge device yet. 
 
@@ -346,21 +353,128 @@ Then, wait a little bit until everything is well in place and check your connect
 Let's play with our connected registry
 ======================================
 
-ACR Scope map
--------------
+Application repositories
+------------------------
+
+From an application point of view, we will need to have a repository in our registry with images. As an example will will consider to use the default hellow world image. We need to import the repo in our registry
+
+```
+az acr import \
+  --name $REGISTRY_NAME \
+  --source mcr.microsoft.com/mcr/hello-world:latest
+```
+
+The second step consists in updating our connected registry to add the hello world repository as the list of repositories to sync:
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/connected-registry-add-hello-world.png)
+
+Tokens & ACR Scope map
+----------------------
+
+To pull images from an Azure Container Registry, we need a way to authenticate clients and as registries can be made of many repositories, the way to manage this multi-tenancy aspect in ACR is through tokens & Scope Map. Actually, we already used it before in this when we used the `az acr connected-registry get-settings` but he did not explain in detail the mechanism behind. It is pretty simple. For a user to access a repository, we must define:
+- a list of accessible repositories and for each, the associated permissions (read, write, delete, ...). This is the **Scope Map**
+- a way to give access to a registry (with a possibility to define an expiration time): this is the **Token**
+
+A token is associated to a Scope Map and we can create all at one in a single command. Let's do this for our registry:
+
+```
+az acr token create --name hello-world-rw --registry $REGISTRY_NAME \
+  --repository mcr/hello-world \
+  content/write content/read \
+  --output json
+```
+
+This command create a scope map with the appropriate permissions and its associated token with no expiration limit.
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/scope-map-hello-world.png)
+
+We then update our connected registry with this new token so that users can connect usigin the docker CLI to the on-premise connected registry
+
+```
+az acr connected-registry update \
+  --name $CONNECTED_REGISTRY_NAME \
+  --registry $REGISTRY_NAME \
+  --add-client-token hello-world-rw
+```
 
 Pull image from the device
 --------------------------
 
+Connect to a local VM that is supposed to use the connected registry as its container registry. In our example everything is done on the same VM. We first validate that we can connected to our local registry with our token
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/docker-login.png)
+
+Once we validated the login step, we can simply run a Docker container to pull the associated image and we can see that everything is working as expected
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/docker-run-hello-world.png)
+
 Push image from the device
 --------------------------
 
+Now that we have been able to pull an image, let's try to build our own image and to push this image into the registry. For this purpose, we'll use a simple Node app
+
+```
+const http = require('http');
+const os = require('os');
+
+console.log("Application starting...");
+
+var handler = function(request, response) {
+  console.log("Request from " + request.connection.remoteAddress);
+  response.writeHead(200);
+
+  response.end(`<!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+        </head>
+        <body>
+                <div class="center">
+                        <p>You've hit <h1>` + os.hostname() + `</h1></p>
+                </div>
+        </body>
+      </html>`);
+  }
+};
+
+var www = http.createServer(handler);
+www.listen(8080);
+```
+
+and its associated **Dockerfile**
+
+```
+FROM node:17-alpine
+ADD app.js /app.js
+ENTRYPOINT ["node", "app.js"]
+```
+
+We build the image with `docker build -t localhost:8000/generic-js-app:0.1 .` and we push the image with `docker push localhost:8000/generic-js-app:0.1`
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/docker-push-issues.png)
+
+Whoops! What did we miss? As we are trying to push to a connected registry (which is synced with our Azure container registry), grants defined earlier apply and we should then extend this grants to add a new repo
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/connected-registry-add-generic-js.png)
+![image]({{ site.baseurl }}/assets/images/connected-registry/scope-map-add-generic-js.png)
+
+Let's try again...
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/docker-push.png)
+
+Yeah! It works! And, if we have a look at the container registry instance in the portal, we see that our repo and our image have successfully been pushed.
+
+![image]({{ site.baseurl }}/assets/images/connected-registry/generic-js-app.png)
+
+Conclusion
+==========
+
+In this article, we have seen how we can combine the power of Azure Container Registry and IOT Hub / IOT Edge device to build local replication (with read/write capabilities) of our global container registry instance. We then tested that both pull and push actions on the local instance are working as expected and that synchronization between global and local instances are working well.
+
 Links
------
-[What is a connected registry?](https://docs.microsoft.com/en-us/azure/container-registry/intro-connected-registry)
-IOT Hub
-IOT Edge
-[Deploy IOT Edge on Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-provision-single-device-linux-symmetric?view=iotedge-2020-11&tabs=azure-portal%2Cubuntu)
-[Quickstart: Create a connected registry using the Azure portal](https://docs.microsoft.com/en-us/azure/container-registry/quickstart-connected-registry-portal)
-[Quickstart: Deploy a connected registry to an IoT Edge device](https://docs.microsoft.com/en-us/azure/container-registry/quickstart-deploy-connected-registry-iot-edge-cli)
-...
+=====
+[What is a connected registry?](https://docs.microsoft.com/en-us/azure/container-registry/intro-connected-registry) <br/>
+[Deploy IOT Edge on Linux](https://docs.microsoft.com/en-us/azure/iot-edge/how-to-provision-single-device-linux-symmetric?view=iotedge-2020-11&tabs=azure-portal%2Cubuntu) <br/>
+[Quickstart: Create a connected registry using the Azure portal](https://docs.microsoft.com/en-us/azure/container-registry/quickstart-connected-registry-portal) <br/>
+[Quickstart: Deploy a connected registry to an IoT Edge device](https://docs.microsoft.com/en-us/azure/container-registry/quickstart-deploy-connected-registry-iot-edge-cli) <br/>
+[ACR Scope Map](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-repository-scoped-permissions) <br/>
