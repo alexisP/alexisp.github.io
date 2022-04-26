@@ -3,10 +3,10 @@ layout: post
 title:  "Azure Container Registry - Connected registries"
 author: alexisplantin
 comments: false
-categories: [ Azure, Kubernetes, Docker ]
+categories: [ Azure, Kubernetes, Docker, ACR, registry ]
 image: assets/images/connected-registry/connected-registry-architecture.png
 ---
-In this article, we will implement a connected registry architecture with an Azure container registry and we will detail the various available features and use cases connected registry can cover.
+In this article, we will implement a connected registry architecture with an Azure container registry and we will detail  various available features and use cases connected registry can cover.
 
 Whenever we are working in a container-based environment, we need to build and push our applications images into container registries. We have a huge number of options in the market that provide registry capabilities (Harbor, Quay, ...) and even if their initial goal is to provide storage capabilities for images, they are enriched with additional features to ease developers and operators activities around image management (image security scan for vulnerabilities, role-based access control, content signing, ...). 
 
@@ -65,7 +65,7 @@ This is where the connected registry feature can help us to still rely on Azure 
 
 > A connected registry is an on-premises or remote replica that synchronizes container images and other OCI artifacts with your cloud-based Azure container registry.
 
-Exactly what we need but to get this connected registry deployed in our on premise environment, we need to jump into the Azure IOT ecosystem as it will be used as a foundation for the connected registry.
+Exactly what we need but to get this connected registry deployed in our on premise environment, we need to jump into the Azure IOT ecosystem as it has to be used as a foundation for the connected registry: **a connected registry must be deployed on an IOT Edge device.**
 
 IOT Edge & IOT Hub
 ==================
@@ -73,7 +73,7 @@ IOT Edge & IOT Hub
 IOT Edge
 --------
 
-In our scenario, we will use a solution called Azure IOT Edge. Its main purposes is to provide capabilities to deploy modules on devices and to bring analytics and business logic on devices. IOT Edge comes with IOT Edge modules which are containers that can run many kind of services from Azure services to your own business code.
+In our scenario, we will use a solution called Azure IOT Edge. Its main purpose is to provide capabilities to deploy modules and to bring analytics and business logic on devices. IOT Edge comes with IOT Edge modules which are containers that can run services of different nature: Azure services or your own business code.
 
 ![image]({{ site.baseurl }}/assets/images/connected-registry/iot-edge.png)
 
@@ -102,7 +102,7 @@ Create an IOT Hub & IOT Edge device
 
 ### IOT Hub configuration
 
-Once you IOT Hub is created (if you do not already have one) you have to declare the IOT Edge instance:
+Once your IOT Hub is created (if you do not already have one) you have to declare the IOT Edge instance:
 
 `az iot hub device-identity create --device-id <iot-edge-device-id> --hub-name <iot-hub-name> --edge-enabled`
 
@@ -110,7 +110,7 @@ with
 - `<iot-edge-device-id>` is a unique identifier that you must define in your IOT Hub
 - `<iot-hub-name>` is the name of your IOT Hub
 
-We will then need the connection string of our device
+We will then need to retrieve the connection string of our device
 
 `az iot hub device-identity connection-string show --device-id <iot-edge-device-id> --hub-name <iot-hub-name>`
 
@@ -212,7 +212,7 @@ The following command is required for 2 important things:
 - Get the `ACR_REGISTRY_CONNECTION_STRING` variable
 - Generate and get a sync token
 
-This values will be required to generate our connected registry module manifest.
+These values will be required to generate our connected registry module manifest.
 
 ```
 REGISTRY_NAME=<container-registry-shortname>
@@ -231,7 +231,7 @@ Adapt the following template by replacing the following values with the appropri
 - `<REPLACE_WITH_CLOUD_REGISTRY_NAME>`: you ACR short name
 - `<REPLACE_WITH_CONNECTED_REGISTRY_NAME>`: your connected registry name
 - `<REPLACE_WITH_SYNC_TOKEN_NAME>`: the `SYNC_TOKEN_USER` we got on the previous command output
-- `REPLACE_WITH_SYNC_TOKEN_PASSWORD` and `<REPLACE_WITH_SYNC_TOKEN_PASSWORD>`: the `SYNC_TOKEN_PASSWORD` we got from the preivous command
+- `REPLACE_WITH_SYNC_TOKEN_PASSWORD` and `<REPLACE_WITH_SYNC_TOKEN_PASSWORD>`: the `SYNC_TOKEN_PASSWORD` we got from the previous command
 - `<REPLACE_WITH_CLOUD_REGISTRY_REGION>`: the region where you registry is deployed (eg. eastus)
 
 ```
@@ -356,7 +356,7 @@ Let's play with our connected registry
 Application repositories
 ------------------------
 
-From an application point of view, we will need to have a repository in our registry with images. As an example will will consider to use the default hellow world image. We need to import the repo in our registry
+From an application point of view, we will need to have a repository in our registry with images. As an example will will consider to use the default hello-world image. We need to import the repo in our registry
 
 ```
 az acr import \
@@ -371,7 +371,7 @@ The second step consists in updating our connected registry to add the hello wor
 Tokens & ACR Scope map
 ----------------------
 
-To pull images from an Azure Container Registry, we need a way to authenticate clients and as registries can be made of many repositories, the way to manage this multi-tenancy aspect in ACR is through tokens & Scope Map. Actually, we already used it before in this when we used the `az acr connected-registry get-settings` but he did not explain in detail the mechanism behind. It is pretty simple. For a user to access a repository, we must define:
+To pull images from an Azure Container Registry, we need a way to authenticate clients and as registries can be made of many repositories, the way to manage this multi-tenancy aspect in ACR is through tokens & Scope Map. Actually, we already used it before in this article when we used the `az acr connected-registry get-settings` but we did not explain in detail the mechanism behind. It is pretty simple. For a user to access a repository, we must define:
 - a list of accessible repositories and for each, the associated permissions (read, write, delete, ...). This is the **Scope Map**
 - a way to give access to a registry (with a possibility to define an expiration time): this is the **Token**
 
@@ -388,7 +388,7 @@ This command create a scope map with the appropriate permissions and its associa
 
 ![image]({{ site.baseurl }}/assets/images/connected-registry/scope-map-hello-world.png)
 
-We then update our connected registry with this new token so that users can connect usigin the docker CLI to the on-premise connected registry
+We then update our connected registry with this new token so that users can connect to the on-premise connected registry using the docker CLI.
 
 ```
 az acr connected-registry update \
@@ -400,7 +400,7 @@ az acr connected-registry update \
 Pull image from the device
 --------------------------
 
-Connect to a local VM that is supposed to use the connected registry as its container registry. In our example everything is done on the same VM. We first validate that we can connected to our local registry with our token
+Next step is to connect to a local VM that is supposed to use the connected registry as its container registry. In our example everything is done on the same VM. We first validate that we can connect to our local registry with our token
 
 ![image]({{ site.baseurl }}/assets/images/connected-registry/docker-login.png)
 
@@ -470,6 +470,11 @@ Conclusion
 ==========
 
 In this article, we have seen how we can combine the power of Azure Container Registry and IOT Hub / IOT Edge device to build local replication (with read/write capabilities) of our global container registry instance. We then tested that both pull and push actions on the local instance are working as expected and that synchronization between global and local instances are working well.
+
+Although there is a possibility to deploy top-level container registries in an on-premise environment through Azure Stack Hub, this is not the same purpose as connected registries which are more local mirrors of central registries deployed on the cloud. 
+
+Over the last few months, we have seen the Azure Arc solution enriched by the same kind of capabilities: deploying Azure services on our old good on-premise servers with [Arc-enabled data services](https://docs.microsoft.com/en-us/azure/azure-arc/data/overview) and [App Services on Azure Arc](https://docs.microsoft.com/en-us/azure/app-service/overview-arc-integration). Maybe, in a near future we will be able to deploy connected registry through this mechanism instead of relying on Azure IOT stack, who knows... Stay tuned!
+
 
 Links
 =====
