@@ -23,7 +23,7 @@ General presentation of the services
 Azure managed Grafana
 ---------------------
 
-Azure managed Grafana lets you setup a complete Grafana instance fully managed in the Azure platform. It is a great service for people used to Grafana for years in other ecosystems because they can still rely on their well-known solution while jumping into the Azure world. This managed Grafana is highly available and comes with SLA guarantees (99.9%). It also provides automatic software updates and is seamlessly integrated with the Azure platform:
+Azure managed Grafana lets you setup a complete Grafana instance fully managed in the Azure platform and supported by Grafana Enterprise (enterprise plugins are not yet available). It is a great service for people used to Grafana for years in other ecosystems because they can still rely on their well-known solution while jumping into the Azure world. This managed Grafana is highly available and comes with SLA guarantees (99.9%). It also provides automatic software updates and is seamlessly integrated with the Azure platform:
 
 * **Automatic authentication and authorization setup** based on Azure AD identities and pre-built Azure roles (Grafana Admin, Grafana Editor and Grafana Viewer)
 * capability to integrate **various Azure datasources** through an Azure managed identity and RBAC permissions on your subscriptions. By default, a fresh Grafana instance will get the Monitoring Reader role for all Azure Monitor data and Log Analytics resources on the subscription it has been created. Grants should be extended to other scopes then to collect more data from more data sources.
@@ -34,7 +34,7 @@ Azure Monitor managed service for Prometheus
 
 Azure Monitor managed service for Prometheus is coming as a new feature in the Azure Monitor ecosystem and is interegrated in the Azure Monitor Metrics platform. It can be used to collect data from:
 * AKS clusters through the automatic deployment of a special version of the Azure Monitor Agent (AMA)
-* Any Kubernetes cluster with a Prometheus instance using the remote write feature
+* Any Kubernetes cluster with a self-managed Prometheus into the managed service using the remote write feature from Prometheus
 
 In this article, we will focus on the first option: integration of Prometheus and Grafana for an AKS cluster.
 
