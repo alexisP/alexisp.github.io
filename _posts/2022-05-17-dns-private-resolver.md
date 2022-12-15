@@ -6,7 +6,7 @@ comments: false
 categories: [ Azure, Network, DNS ]
 image: assets/images/dns-private-resolver/azure-architecture-with-firewall.png
 ---
-This article aims at describing a new Azure service that has just been published in public preview and which should be of a great help when dealing with complex and hybrid DNS scenarios: **Azure DNS Private resolver**
+This article aims at describing an Azure service that should be of a great help when dealing with complex and hybrid DNS scenarios: **Azure DNS Private resolver**
 
 <section class="row">
   <div class="col-md-4"></div>
