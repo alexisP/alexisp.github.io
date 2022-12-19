@@ -159,6 +159,121 @@ And you can see data in the different dashboards!
 
 In a couple of minutes and with no effort, we have been able to setup a complete monitoring stack with Prometheus/Grafana. Of course, we let all default parameters and the next steps would be to go deeper in the monitoring solution to define metrics, thresholds, alerts...
 
+Define alerts
+=============
+
+Prometheus rule groups
+----------------------
+
+Prometheus can be used to collect our metrics but it also comes with alerting capabilities. Let's see how it is structured and put some alerts in place.
+
+In Azure Monitor workspace, you can define **Rule groups** that will contain rules which act on data collected by Prometheus. These rules can be of two different types:
+- **Recording rule**: They are used to compute expressions and to store the results on custom time series. It is mainly useful for performance. By default, once our previous setup is done, you will see that 2 rules groups per cluster have been created in your Azure Monitor workspace. Each one contains a couple of recording rules. 
+- **Alerts**: We can define our alerts, based on PromQL and integrate it directly in Azure Monitor to generate actions based on standard Azure Monitor actions groups
+
+
+Action groups
+-------------
+
+As we just said before, we can act on Kubernetes alerts we defined with the complete portfolio of actions available in Azure Monitor actions groups. It means that we can of course send emails (this is what we'll do here) but also imagine more robust alerting scenarios like generating incidents in our favorite ITSM solution, run an Azure Function or a Logic App, call webhooks, send Teams messages...
+
+<section class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-10">
+    <img src="../assets/images/prometheus-grafana/azure-monitor-action-group.png"/>
+  </div>
+  <div class="col-md-1"></div>
+</section>
+
+Create the alerts
+-----------------
+
+As of now, the only way to define alerts on our Kubernetes cluster is to pass through ARM templates. In the [Azure documentation for Prometheus alert rules](https://learn.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-metric-alerts?tabs=azure-portal#prometheus-alert-rules), you can find two rule groups samples with alert rules. We will just use the [**Community alerts**](https://github.com/Azure/prometheus-collector/blob/main/GeneratedMonitoringArtifacts/Default/DefaultAlerts.json) one. We can simply deploy the ARM template through the Azure portal
+
+<section class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-10">
+    <img src="../assets/images/prometheus-grafana/prometheus-create-rule-group.png"/>
+  </div>
+  <div class="col-md-1"></div>
+</section>
+
+Once created, alerts can be found in the Azure Monitor workspace > Rule groups
+
+<section class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-10">
+    <img src="../assets/images/prometheus-grafana/am-workspace-rule-groups.png"/>
+  </div>
+  <div class="col-md-1"></div>
+</section>
+
+Validate the workflow
+---------------------
+
+Now, everything is ready and we can get alerts from Azure Monitor for our Kubernetes clusters. To validate it, I just try to create a simple pod with more memory than what's available on my nodes and it will set the pod in a **Pending** status
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-sample-app
+spec:
+  containers:
+    - image: gcr.io/kuar-demo/kuard-amd64:1
+      name: kuard
+      livenessProbe:
+        httpGet:
+          path: /healthy
+          port: 8080
+        initialDelaySeconds: 5
+        timeoutSeconds: 1
+        periodSeconds: 10
+        failureThreshold: 3
+      ports:
+        - containerPort: 8181
+          name: http
+          protocol: TCP
+      resources:
+        requests:
+          memory: "8Gi"
+          cpu: "250m"
+        limits:
+          memory: "8Gi"
+          cpu: "500m"
+```
+
+After 5 minutes (which is the time defined in the alert definition), the alert is fired and I receive the expected email
+
+<section class="row">
+  <div class="col-md-1"></div>
+  <div class="col-md-10">
+    <img src="../assets/images/prometheus-grafana/azure-monitor-email.png"/>
+  </div>
+  <div class="col-md-1"></div>
+</section>
+
+Prometheus/Grafana vs Containers Insights
+=========================================
+
+In this article, we have seen how to setup a Prometheus/Grafana stack using Azure managed services to monitor our Kubernetes clusters and these services are quite new (Prometheus is still in preview). But you may know that there is also another native monitoring capability called Containers Insights which give you lots of features around Kubernetes clusters observability. 
+
+Actually, Containers Insights is not only metrics oriented as it also collects logs and send it into Log Analytics workspace. For the metrics part, Container Insights now propose 2 options:
+- send the data to either Azure Monitor Logs through the monitoring addon
+- send the data to Azure Monitor managed service for Prometheus through the metrics addon
+
+So the Prometheus part can be been as a subpart of the global Container Insights solution, even if it can be used independently.
+
+Grafana is not part of Container Insights and overlap with Azure Monitor Workbooks feature as a visualization solution. Both can be used in paralell and which one to use is more of a personal preference.
+
+Conclusion
+==========
+
+For people used to manage Prometheus/Grafana stack for a long time, it is very straightforward to continue to use it in Azure with the managed services. It is even easier that before because you don't need to manage the infrastructure to make sure your services are up & running. You can instead focus on what really matters:
+- which data should I collect?
+- what are my alerts?
+- what should be the workflow for which kind of alerts?
+
 References
 ==========
 
@@ -167,3 +282,5 @@ References
 [Create an Azure Monitor instance](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/azure-monitor-workspace-overview?tabs=azure-portal)
 
 [Understanding metrics in Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/data-platform-metrics)
+
+[Azure Monitor workspace - Rule groups](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/prometheus-rule-groups)
