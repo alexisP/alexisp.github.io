@@ -16,6 +16,24 @@ This article aims at describing how you can take benefit from the recent **Grafa
   <div class="col-md-1"></div>
 </section>
 
+- [General presentation of the services](#general-presentation-of-the-services)
+  - [Azure managed Grafana](#azure-managed-grafana)
+  - [Azure Monitor managed service for Prometheus](#azure-monitor-managed-service-for-prometheus)
+- [Setup your monitoring stack](#setup-your-monitoring-stack)
+  - [Create your Azure Managed Grafana instance](#create-your-azure-managed-grafana-instance)
+  - [Create your Azure Monitor workspace](#create-your-azure-monitor-workspace)
+  - [Link your Azure Monitor workspace to your Grafana instance](#link-your-azure-monitor-workspace-to-your-grafana-instance)
+  - [Enable Prometheus metrics collection](#enable-prometheus-metrics-collection)
+- [Observe your clusters in Grafana](#observe-your-clusters-in-grafana)
+- [Define alerts](#define-alerts)
+  - [Prometheus rule groups](#prometheus-rule-groups)
+  - [Action groups](#action-groups)
+  - [Create the alerts](#create-the-alerts)
+  - [Validate the workflow](#validate-the-workflow)
+- [Prometheus/Grafana vs Containers Insights](#prometheusgrafana-vs-containers-insights)
+- [Conclusion](#conclusion)
+- [References](#references)
+
 
 General presentation of the services
 ====================================
