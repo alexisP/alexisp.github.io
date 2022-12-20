@@ -198,6 +198,10 @@ As of now, the only way to define alerts on our Kubernetes cluster is to pass th
   <div class="col-md-1"></div>
 </section>
 
+Here are the required ids to provide:
+- **Action Group Resource Id**: The path to access your action group resource id is Azure Monitor > Alerts tab > Actions groups > [your action group] > Properties
+- **Mac Resource Id**: This is the resource id of your Azure Monitor workspace 
+
 Once created, alerts can be found in the Azure Monitor workspace > Rule groups
 
 <section class="row">
