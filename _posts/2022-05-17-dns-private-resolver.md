@@ -32,6 +32,7 @@ To illustrate the service, we will start by describing the main components that 
   - [*spoke1pgsingle.postgres.database.azure.com* resolution from *spoke1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-spoke1-1)
   - [*spoke1pgsingle.postgres.database.azure.com* resolution from *onprem1*](#spoke1pgsinglepostgresdatabaseazurecom-resolution-from-onprem1-1)
 - [Conclusion](#conclusion)
+- [Links](#links)
 
 Main Azure DNS components
 =========================
@@ -205,3 +206,12 @@ Conclusion
 With this new DNS service, it is now straightforward to setup complex DNS architecture with several conditional forwarders between Azure and on-premise (and vice versa) and it becomes also easy to provide privatelink resolution capabilities from on-premise. As the usage of privatelink is becoming higher and higher, it was important for users to setup their DNS resolution is a simple way without having to manage on their own their old good VMs with DNS services. 
 
 In a future article, we'll describe how we can integrate the Azure DNS Private resolver service with Azure Firewall in order to get precious insights about DNS queries in our Azure ecosystem.
+
+Links
+=====
+
+A microhack to bootstrap a complete architecture similar to the one described in this article and to perform several resolution tests co-written with [David Santiago](https://www.linkedin.com/in/davsantiago/): [Microhack DNS private resolver](https://github.com/dawlysd/azure-dns-private-resolver-microhack)
+
+[What is Azure DNS Private Resolver?](https://docs.microsoft.com/en-us/azure/dns/dns-private-resolver-overview)
+
+[Create an Azure private DNS Resolver](https://docs.microsoft.com/en-us/azure/dns/dns-private-resolver-get-started-portal)
