@@ -1,9 +1,9 @@
 ---
 layout: post
-title:  "Monitor you AKS cluster with Prometheus and Grafana managed services"
+title:  "Monitor your AKS cluster with Prometheus and Grafana managed services"
 author: alexisplantin
 comments: false
-categories: [ Azure, Kubernetes, AKS, Prometheus, Grafana, Moniroting, Observability ]
+categories: [ Azure, Kubernetes, AKS, Prometheus, Grafana, Monitoring, Observability ]
 image: assets/images/prometheus-grafana/am-workspace-overview.png
 ---
 This article aims at describing how you can take benefit from the recent **Grafana** and **Prometheus** managed services to monitor your Kubernetes clusters in an easy and maintainable way
@@ -41,16 +41,16 @@ General presentation of the services
 Azure managed Grafana
 ---------------------
 
-Azure managed Grafana lets you setup a complete Grafana instance fully managed in the Azure platform and supported by Grafana Enterprise (enterprise plugins are not yet available). It is a great service for people used to Grafana for years in other ecosystems because they can still rely on their well-known solution while jumping into the Azure world. This managed Grafana is highly available and comes with SLA guarantees (99.9%). It also provides automatic software updates and is seamlessly integrated with the Azure platform:
+Azure managed Grafana lets you set up a complete Grafana instance fully managed in the Azure platform and supported by Grafana Enterprise (enterprise plugins are not yet available). It is a great service for people used to Grafana for years in other ecosystems because they can still rely on their well-known solution while jumping into the Azure world. This managed Grafana is highly available and comes with SLA guarantees (99.9%). It also provides automatic software updates and is seamlessly integrated with the Azure platform:
 
 * **Automatic authentication and authorization setup** based on Azure AD identities and pre-built Azure roles (Grafana Admin, Grafana Editor and Grafana Viewer)
-* capability to integrate **various Azure datasources** through an Azure managed identity and RBAC permissions on your subscriptions. By default, a fresh Grafana instance will get the Monitoring Reader role for all Azure Monitor data and Log Analytics resources on the subscription it has been created. Grants should be extended to other scopes then to collect more data from more data sources.
+* capability to integrate **various Azure data sources** through an Azure managed identity and RBAC permissions on your subscriptions. By default, a fresh Grafana instance will get the Monitoring Reader role for all Azure Monitor data and Log Analytics resources on the subscription it has been created. Grants should be extended to other scopes then to collect more data from more data sources.
 * default Grafana dashboards available as a base
 
 Azure Monitor managed service for Prometheus
 --------------------------------------------
 
-Azure Monitor managed service for Prometheus is coming as a new feature in the Azure Monitor ecosystem and is interegrated in the Azure Monitor Metrics platform. It can be used to collect data from:
+Azure Monitor managed service for Prometheus is coming as a new feature in the Azure Monitor ecosystem and is integrated into the Azure Monitor Metrics platform. It can be used to collect data from:
 * AKS clusters through the automatic deployment of a special version of the Azure Monitor Agent (AMA)
 * Any Kubernetes cluster with a self-managed Prometheus into the managed service using the remote write feature from Prometheus
 
@@ -62,7 +62,7 @@ Setup your monitoring stack
 Create your Azure Managed Grafana instance
 ------------------------------------------
 
-Creating your Managed Grafana instance is as easy as providing it a name, a location and to explicitly say if you want or not your instance to be highly available through a deployment of VMs across multiple availability zones
+Creating your Managed Grafana instance is as easy as providing it a name, a location and explicitly say if you want or not your instance to be highly available through a deployment of VMs across multiple availability zones
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -76,7 +76,7 @@ Other tabs cover more specific configurations:
 * **Advanced**: here you could add advanced options like *Enabling API key creation* to perform some automation on your Grafana instance through API calls like creating dashboards and *Deterministic outbound IP* to get a fixed IP address for the outbound connectivity useful in many filtering scenarios
 * **Permission**: this tab lets you customize default permission settings like disabling the Monitoring Reader on the target subscription or adding more Grafana administrator to the instance (only you as a default)
 
-Once created, you can find your instance in the Azure portal and see on the overview your Grafana instance URL on the Endpoint section:
+Once created, you can find your instance in the Azure portal and see on the overview your Grafana instance URL in the Endpoint section:
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -96,7 +96,7 @@ When you hit this URL on your favorite Web browser, here you are! You will just 
   <div class="col-md-1"></div>
 </section>
 
-The Azure integration part is visible when you go on the Dashboards screen where you will be able to find several pre-built dashboards to monitor your Azure resources:
+The Azure integration part is visible when you go to the Dashboards screen where you will be able to find several pre-built dashboards to monitor your Azure resources:
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -140,7 +140,7 @@ Once your workspace is setup, go to the *Linked Grafana workspaces* menu to see 
 Enable Prometheus metrics collection
 ------------------------------------
 
-Once your workspace is setup, go on the *Monitored clusters* menu to see the list of available clusters. Here you can see that some clusters on the screenshots are already connected to an existing workspace. We can now configure our contoso-aks cluster to use my new Azure Monitor workspace.
+Once your workspace is setup, go to the *Monitored clusters* menu to see the list of available clusters. Here you can see that some clusters on the screenshots are already connected to an existing workspace. We can now configure our contoso-aks cluster to use my new Azure Monitor workspace.
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -280,13 +280,13 @@ Prometheus/Grafana vs Containers Insights
 
 In this article, we have seen how to setup a Prometheus/Grafana stack using Azure managed services to monitor our Kubernetes clusters and these services are quite new (Prometheus is still in preview). But you may know that there is also another native monitoring capability called Containers Insights which give you lots of features around Kubernetes clusters observability. 
 
-Actually, Containers Insights is not only metrics oriented as it also collects logs and send it into Log Analytics workspace. For the metrics part, Container Insights now propose 2 options:
+Actually, Containers Insights is not only metrics oriented as it also collects logs and send them into a Log Analytics workspace. For the metrics part, Container Insights now propose 2 options:
 - send the data to either Azure Monitor Logs through the monitoring addon
 - send the data to Azure Monitor managed service for Prometheus through the metrics addon
 
 So the Prometheus part can be been as a subpart of the global Container Insights solution, even if it can be used independently.
 
-Grafana is not part of Container Insights and overlap with Azure Monitor Workbooks feature as a visualization solution. Both can be used in paralell and which one to use is more of a personal preference.
+Grafana is not part of Container Insights and overlaps with Azure Monitor Workbooks feature as a visualization solution. Both can be used in parallel and which one to use is more of a personal preference.
 
 Conclusion
 ==========
