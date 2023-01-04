@@ -106,7 +106,7 @@ The Azure integration part is visible when you go to the Dashboards screen where
   <div class="col-md-1"></div>
 </section>
 
-Pretty call to have our Grafana instance up & running but quite useless with no data in it, so let's jump to the next section
+Pretty cool to have our Grafana instance up & running but quite useless with no data in it, so let's jump to the next section
 
 Create your Azure Monitor workspace
 -----------------------------------
