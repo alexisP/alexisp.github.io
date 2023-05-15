@@ -6,9 +6,9 @@ comments: false
 categories: [ Azure, Kubernetes ]
 image: assets/images/workload-identity-federation/banner.png
 ---
-This article aims at explaining, with a detailed example the workload identity federation feature. It enable pods from any Kubernetes cluster distribution to use a federation mechanism with an Azure Managed identity which allow, at the end, scenarios where the workload can interact with Azure resources relying on identities instead of passwords.
+This article aims at explaining, with a detailed example the workload identity federation feature. It enables pods from any Kubernetes cluster distribution to use a federation mechanism with an Azure Managed identity which allows, in the end, scenarios where the workload can interact with Azure resources relying on identities instead of passwords.
 
-To illustrate the feature, we will setup a complete example with a simple Spring Boot application that will connect an Azure database for PostgreSQL in a passwordless model.
+To illustrate the feature, we will setup a complete example with a simple Spring Boot application that will connect to an Azure database for PostgreSQL in a passwordless model.
 
 - [A bit of theory](#a-bit-of-theory)
   - [What is a managed identity?](#what-is-a-managed-identity)
@@ -37,23 +37,23 @@ A bit of theory
 What is a managed identity?
 ---------------------------
 
-A managed identity in Azure is a type of service principal that allows an application or service to authenticate with other Azure services securely, without the need for storing credentials. Credentials are not accesible and a managed identity get an access token from Azure AD instead. Services use these tokens to access Azure services that support Azure AD authentication.
+[A managed identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) in Azure is a type of service principal that allows an application or service to authenticate with other Azure services securely, without the need for storing credentials. Credentials are not accessible and a managed identity gets an access token from Azure AD instead. Services use these tokens to access Azure services that support Azure AD authentication.
 
 Workload identity federation
 ----------------------------
 
 We have just seen that, for workloads hosted in Azure, we can use a managed identity to authenticate against Azure AD protected resources (such as a KeyVault or a database) without the need to manage credentials. It is a great way to improve security (no credentials leakage) and operability (no credentials expiration that could compromise your application availability) but it was not available, by default, to workloads hosted outside of Azure. 
 
-Workload identity federation mind the gap by using standard federation mechanisms where we can establish trusted connectivity between an external identity provider (IdP) and Azure AD which acts as the service provider. Workloads use tokens issued by their IdP to exchange it with a valid Azure AD access token (through a managed identity) and then use this token to access Azure services.
+Workload identity federation minds the gap by using standard federation mechanisms where we can establish trusted connectivity between an external identity provider (IdP) and Azure AD which acts as the service provider. Workloads use tokens issued by their IdP to exchange it with a valid Azure AD access token (through a managed identity) and then use this token to access Azure services.
 
 Federated credentials
 ---------------------
 
-Now that we explained the concept of workload identity federation, federated credentials in Azure is the way to establish this trust relationship between the external IdP and an Azure AD managed application (a managed identity). It is part of the configuration within a user-assigned managed identity. It contains several fields but the most important ones are 
-- issuer: this is the URL which correspond to the IdP. It is used by Azure AD to get keys and control that tokens it receives have been provided by this IdP.
+Now that we have explained the concept of workload identity federation, federated credentials in Azure is the way to establish this trust relationship between the external IdP and an Azure AD managed application (a managed identity). It is part of the configuration within a user-assigned managed identity. It contains several fields but the most important ones are 
+- issuer: this is the URL which corresponds to the IdP. It is used by Azure AD to get keys and control that tokens it receives have been provided by this IdP.
 - subject: this is the identifier of the workload coming from the external system
 
-When a request token is received from a workload, issuer and subject contained in the token are check against the ones provided in the federated credentials configuration. Then, Azure AD will be able to move forward in the workflow of delivering an access token.
+When a request token is received from a workload, issuer and subject contained in the token are checked against the ones provided in the federated credentials configuration. Then, Azure AD will be able to move forward in the workflow of delivering an access token.
 
 Workload identity in Kubernetes
 -------------------------------
@@ -67,7 +67,7 @@ Let's make it!
 TL;DR
 -----
 
-A gist which go through all steps is available [here](https://gist.github.com/alexisP/88222ce7a6ed6188e726186f4b763e23)
+A gist which goes through all steps is available [here](https://gist.github.com/alexisP/88222ce7a6ed6188e726186f4b763e23)
 
 Prerequisite: A well configured AKS cluster
 --------------------------------------------
@@ -99,7 +99,7 @@ Once we have the cluster created (or updated), we must get its OIDC issuer URL:
 export AKS_OIDC_ISSUER="$(az aks show -n "${CLUSTER_NAME}" -g "${RESOURCE_GROUP}" --query "oidcIssuerProfile.issuerUrl" -otsv)"
 ```
 
-Now, we have a Kubernetes cluster with an IODC issuer. It means that when a workload (a pod) will ask for an access token to Azure AD (AAD), AAD will validate the signed token before exchanging it with an AAD access token.
+Now, we have a Kubernetes cluster with an IODC issuer. This means that when a workload (a pod) asks for an access token to Azure AD (AAD), AAD will validate the signed token before exchanging it with an AAD access token.
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -141,14 +141,14 @@ PostgreSQL database
 
 Now, let's create the database (an Azure Database for PostgreSQL - Single Server) and configure it. Once the PostgreSQL server is created, here is what should be configured for our demo:
 - Create a database instance for our future application
-- Add a firewall rule to our server to enabled public communication to our server (I know it is REALLY bad, never do this in production!)
-- Create an AAD admin for the server (adding an AAD admin is required because it is the mechanism that activate AAD authentication in the server that we will use for our managed identity authentication)
+- Add a firewall rule to our server to enable public communication (consider using [Private Endpoint](https://learn.microsoft.com/en-us/azure/postgresql/single-server/concepts-data-access-and-security-private-link) in production!)
+- Create an AAD admin for the server (adding an AAD admin is required because it is the mechanism that activates AAD authentication on the server that we will use for our managed identity authentication)
 - Create a PostgreSQL user associated with our managed identity
 
 ```
-export DATABASE_NAME=<YOUR-DATABASE-SERVER-NAME>
-export DATABASE_LOCAL_USER=<A-LOCAL-USERNAME>
-export DATABASE_PASSWORD=<A-SUPER-SECURED-PASSWORD>
+export DATABASE_NAME="<YOUR-DATABASE-SERVER-NAME>"
+export DATABASE_LOCAL_USER="<A-LOCAL-USERNAME>"
+export DATABASE_PASSWORD="<A-SUPER-SECURED-PASSWORD>"
 
 echo "Creating PostgreSQL Server instance"
 
@@ -196,15 +196,15 @@ az postgres server ad-admin create \
     --object-id $DATABASE_AAD_ADMIN_OBJECT_ID
 ```
 
-You should now be in a situation where you have your Azure database for PostgreSQL instance ready and configure. The next step is to create the local user in PostgreSQL that correspond to the managed identity (Note that you need the client ID of the managed identity created on the previous section).
+You should now be in a situation where you have your Azure database for PostgreSQL instance ready and configured. The next step is to create the local user in PostgreSQL that corresponds to the managed identity (Note that you need the client ID of the managed identity created in the previous section).
 
 ```
 export DATABASE_APPLICATION_USER=myuser@$DATABASE_NAME
 export PGPASSWORD=$(az account get-access-token --resource-type oss-rdbms --query "[accessToken]" -o tsv)
-psql "host=$DATABASE_NAME.postgres.database.azure.com port=5432 dbname=demo user=<YOUR-ALIAS>@$DATABASE_NAME sslmode=require"
+psql "host=$DATABASE_NAME.postgres.database.azure.com port=5432 dbname=demo user=<YOUR-AAD-ALIAS>@$DATABASE_NAME sslmode=require"
 ```
 
-Now, you should be connected to the PostgreSQL server with psql, you need to type the following command to create the association between a local PostgreSQL role and your managed identity
+Now, you should be connected to the PostgreSQL server with `psql`, you need to type the following command to create the association between a local PostgreSQL role and your managed identity:
 
 ```
 SET aad_validate_oids_in_tenant = off;
@@ -251,7 +251,7 @@ metadata:
 EOF
 ```
 
-The magic start to operate here. When we enabled the *workload-identity* feature on our cluster, we actually configured a mutating webhook that will inject variables and files directly in the pod ecosystem as soon as this pod is using the newly created service account as its service account (don't worry, we will see how to do it in the last section when we will deploy the application).
+The magic starts to operate here. When we enabled the *workload-identity* feature on our cluster, we actually configured a mutating webhook that will inject variables and files directly into the pod ecosystem as soon as this pod is using the newly created service account as its service account (don't worry, we will see how to do it in the last section when we will deploy the application).
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -264,7 +264,7 @@ The magic start to operate here. When we enabled the *workload-identity* feature
 Federated credentials
 ---------------------
 
-As explained in the theorical section at this beginning of this article, the federation mechanism between an external workload and a user assigned managed identity is done by creating this federated credentials in the managed identity with the issuer and the subject that respectively match the OIDC provider URL of the Kubernetes cluster and the unique identifier of the workload in the cluster
+As explained in the theorical section at the beginning of this article, the federation mechanism between an external workload and a user assigned managed identity is done by creating these federated credentials in the managed identity with the issuer and the subject that respectively match the OIDC provider URL of the Kubernetes cluster and the unique identifier of the workload in the cluster
 
 ```
 export FEDERATED_IDENTITY_CREDENTIAL_NAME="my-fed-identity-cred"
@@ -291,11 +291,11 @@ Now, all the pieces are in place and the magic can happen.
 Our Spring Boot application
 ---------------------------
 
-For the Spring Boot application, i directly used the one issued from the sample from Azure-Samples in github (https://github.com/Azure-Samples/quickstart-spring-data-jpa-postgresql) which illustrate how to make a Spring Boot application connected to an Azure database for PostgreSQL and I adapted its configuration to make it compatible with a passordless authentication through a managed identity. To adapt this application, you need to modify two elements:
+For the Spring Boot application, I used the one issued from the sample from Azure-Samples on GitHub (https://github.com/Azure-Samples/quickstart-spring-data-jpa-postgresql) which illustrates how to make a Spring Boot application connected to an Azure database for PostgreSQL and I adapted its configuration to make it compatible with a passordless authentication through a managed identity. To adapt this application, you need to modify two elements:
 
 ### pom.xml
 
-You need to add a dependency management and a dependency block as shown in the example below
+You need to add a dependency management and a dependency block as shown in the example below:
 
 ```
     <properties>
@@ -327,7 +327,7 @@ You need to add a dependency management and a dependency block as shown in the e
 
 ### application.properties
 
-Then, we just need to change the datasource configuration in the application.properties to explicitly say that we'll use the passwordless (managed identity) authentication mechanism. 
+Then, we just need to change the datasource configuration in the `application.properties` to explicitly say that we'll use the passwordless (managed identity) authentication mechanism. 
 
 You need to:
 - remove the password property
@@ -347,13 +347,13 @@ spring.jpa.show-sql=true
 spring.jpa.hibernate.ddl-auto=create-drop
 ```
 
-I will not go through the details on how the applications has been built, packaged and deployd in this article. Feel free to go to this [Github repository](https://github.com/alexisP/spring-boot-demo/tree/passwordless) for more information (last part of the README file). We will assume for the rest of the article that this application is available as a Docker image at the following URL: `aplantin.azurecr.io/spring-boot/spring-boot-demo-workload-identity-passwordless:1.2`
+I will not go through the details of how the applications has been built, packaged and deployed in this article. Feel free to go to this [Github repository](https://github.com/alexisP/spring-boot-demo/tree/passwordless) for more information (last part of the README file). We will assume for the rest of the article that this application is available as a Docker image at the following URL: `aplantin.azurecr.io/spring-boot/spring-boot-demo-workload-identity-passwordless:1.2`
 
 The last piece: our application deployed in the cluster
 -------------------------------------------------------
 
 The application, for the simplicity of the example, is deployed as a simple pod, as you can see in the snippet below. Here are the important things to notice in the pod specification:
-- it may seem obvious but it must be deployed in the same namespace as the service account we created previously
+- it may seem obvious, but it must be deployed in the same namespace as the service account we created previously
 - it must have the following label `azure.workload.identity/use: "true"` to explicitly say that our pod will have environment variables injected by the workload-identity mutating webhook
 - it must contain two environment variables named AZ_DATABASE_NAME and AZ_DATABASE_USER, as they are referenced and used in the application.properties file
 
@@ -388,10 +388,10 @@ EOF
   <div class="col-md-1"></div>
 </section>
 
-1. Our pod uses the service account and - as the property workload.identity/use is set to true - has environment variables injected in its local FS. When the pod is created, the mutating webhook, which is part of the workload identity feature we activated on our cluster, projects a signed service account token to our workload's volume and injects 4 environment variables to the pod (AZURE_AUTHORITY_HOST, AZURE_CLIENT_ID, AZURE_TENANT_ID and AZURE_FEDERATED_TOKEN_FILE) to pod.
+1. Our pod uses the service account and - as the property workload.identity/use is set to true - has environment variables injected into its local FS. When the pod is created, the mutating webhook, which is part of the workload identity feature we activated on our cluster, projects a signed service account token to our workload's volume and injects 4 environment variables to the pod (`AZURE_AUTHORITY_HOST`, `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_FEDERATED_TOKEN_FILE`) to pod.
 2. The signed federated token (which contains the issuer and the subject in its payload) is sent to Azure AD to get access to an Azure AD access token
 3. Azure AD will verify the federated token by getting the public key to control the signature of the federated token
-4. Once it has validated the federated token, Azure AD send a valid access token
+4. Once it has validated the federated token, Azure AD sends a valid access token
 5. The application uses the access token to authenticate to the database
 
 Verification
@@ -403,7 +403,7 @@ You can check the pod logs to see that everything is going well at startup time
 kubectl logs -f spring-boot-demo-workload-identity-passwordless -n $NAMESPACE_NAME
 ```
 
-you should see an output similar to this one which shows that the managed identity authentication has been used and that the connectivity to the database is well established
+You should see an output similar to this one which shows that the managed identity authentication has been used and that the connectivity to the database is well established:
 
 ```
 2023-05-04 15:20:44.218  INFO 1 --- [           main] AbstractAzureServiceClientBuilderFactory : Will configure the default credential of type DefaultAzureCredential for class com.azure.identity.DefaultAzureCredentialBuilder.
@@ -449,14 +449,14 @@ Jump to your brower at localhost:8080 to see your application with data
 
 You could also use psql to check directly in the database.
 
-Yes, we dit it! We have our Spring Boot application deployed in a Kubernetes cluster which connects to an Azure database for PostgreSQL without any credentials stored anywhere.
+Yes, we did it! We have our Spring Boot application deployed in a Kubernetes cluster which connects to an Azure database for PostgreSQL without any credentials stored anywhere.
 
 From any Kubernetes distribution, really?
 =========================================
 
 Of course, things are easier to setup in AKS as the requirements (an OIDC issuer configured with the cluster and Azure AD workload identity which injects federated credentials into pods) can be added to a cluster by just providing the two flags `--enable-oidc-issuer` and `--enable-workload-identity`, but let's see if we can have our Spring Boot application running in an EKS (on AWS) cluster and if we are still able to connect to our database in a passwordless model.
 
-Let's consider that you have an EKS cluster up & running in AWS. By default, you already have an OpenID provider setup and associated with the cluster. As you can see on the screenshot below, you can get the URL from the Overview tab. As a reminder, this URL is used to setup our federated credential.
+Let's consider that you have an EKS cluster up & running in AWS. By default, you already have an OpenID provider setup and associated with the cluster. As you can see on the screenshot below, you can get the URL from the Overview tab. As a reminder, this URL is used to setup the federated credential.
 
 <section class="row">
   <div class="col-md-1"></div>
@@ -549,7 +549,7 @@ We can verify that our application works as expected:
 kubectl port-forward spring-boot-demo-workload-identity-passwordless 8080:8080
 ```
 
-Jump to your brower at localhost:8080 to see your application with data
+Jump to your browser at localhost:8080 to see your application with data
 <section class="row">
   <div class="col-md-1"></div>
   <div class="col-md-10">
@@ -560,23 +560,20 @@ Jump to your brower at localhost:8080 to see your application with data
 
 We now have our Spring Boot application deployed in EKS that connects to its Azure Database for PostgreSQL using a passwordless authentication mechanism!
 
+# Conclusion
+
+Gratuit, passwordless, MCO y'a R à faire !!
+
+
 References
 ==========
 
-[Workload identity overview](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview)
-
-[Workload identity federation](https://learn.microsoft.com/en-us/azure/active-directory/workload-identities/workload-identity-federation)
-
-[Azure AD Workload identity](https://azure.github.io/azure-workload-identity/docs/quick-start.html)
-
-[OIDC on AKS](https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer)
-
-[Workload identity on AKS](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster)
-
-[Sample for Spring Boot application](https://github.com/alexisP/spring-boot-demo/tree/passwordless) - cloned from [Azure samples - Spring Boot application](https://github.com/Azure-Samples/quickstart-spring-data-jpa-postgresql)
-
-[Spring configuration for passwordless authentication](https://learn.microsoft.com/en-us/azure/developer/java/spring-framework/migrate-postgresql-to-passwordless-connection?tabs=sign-in-azure-cli%2Cjava%2Capp-service%2Cassign-role-service-connector)
-
-[Configure AD authentication with PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-configure-sign-in-azure-ad-authentication)
-
-[PostgreSQL authentication with managed identity](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-connect-with-managed-identity)
+* [Workload identity overview](https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview)
+* [Workload identity federation](https://learn.microsoft.com/en-us/azure/active-directory/workload-identities/workload-identity-federation)
+* [Azure AD Workload identity](https://azure.github.io/azure-workload-identity/docs/quick-start.html)
+* [OIDC on AKS](https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer)
+* [Workload identity on AKS](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster)
+* [Sample for Spring Boot application](https://github.com/alexisP/spring-boot-demo/tree/passwordless) - cloned from [Azure samples - Spring Boot application](https://github.com/Azure-Samples/quickstart-spring-data-jpa-postgresql)
+* [Spring configuration for passwordless authentication](https://learn.microsoft.com/en-us/azure/developer/java/spring-framework/migrate-postgresql-to-passwordless-connection?tabs=sign-in-azure-cli%2Cjava%2Capp-service%2Cassign-role-service-connector)
+* [Configure AD authentication with PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-configure-sign-in-azure-ad-authentication)
+* [PostgreSQL authentication with managed identity](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-connect-with-managed-identity)
