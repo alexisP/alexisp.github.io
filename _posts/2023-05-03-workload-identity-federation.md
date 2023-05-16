@@ -28,6 +28,7 @@ To illustrate the feature, we will setup a complete example with a simple Spring
   - [The last piece: our application deployed in the cluster](#the-last-piece-our-application-deployed-in-the-cluster)
   - [Verification](#verification)
 - [From any Kubernetes distribution, really?](#from-any-kubernetes-distribution-really)
+- [Conclusion](#conclusion)
 - [References](#references)
 
 
@@ -493,6 +494,7 @@ export SERVICE_ACCOUNT_NAMESPACE="<YOUR-SERVICE-ACCOUNT-NAMESPACE>"
 export SERVICE_ACCOUNT_NAME="<YOUR-SERVICE-ACCOUNT-NAME>"
 export DATABASE_NAME="<YOUR-DATABASE-SERVER-NAME>"
 export DATABASE_USER="<A-LOCAL-USERNAME>"
+export DATABASE_APPLICATION_USER=myuser@$DATABASE_NAME
 
 # Copy/paste the value we found in the Overview tab of our EKS cluster in the screenshot above
 export EKS_OIDC_ISSUER="<EKS_OIDC_URL>"
@@ -539,7 +541,7 @@ spec:
       - name: AZ_DATABASE_NAME
         value: ${DATABASE_NAME}
       - name: AZ_DATABASE_USER
-        value: ${DATABASE_USER}
+        value: ${DATABASE_APPLICATION_USER}
 EOF
 ```
 
@@ -562,7 +564,9 @@ We now have our Spring Boot application deployed in EKS that connects to its Azu
 
 # Conclusion
 
-Gratuit, passwordless, MCO y'a R à faire !!
+As we demonstrated, once the Kubernetes cluster is well configured (with an OIDC provider and the workload identity mutating webhook in place), it is pretty straightforward to setup a passwordless authentication to Azure services which support Azure AD authentication. The example here connects to an Azure database for PostgreSQL but the same priciples can be used for other services like a storage account or a KeyVault.
+
+The feature is free, as part of the managed identity service, and give you a great way to get secured authentication while getting rid of all operational aspects (such as rotating credentials) as it is fully managed under the hood by Microsoft.
 
 
 References
@@ -577,3 +581,4 @@ References
 * [Spring configuration for passwordless authentication](https://learn.microsoft.com/en-us/azure/developer/java/spring-framework/migrate-postgresql-to-passwordless-connection?tabs=sign-in-azure-cli%2Cjava%2Capp-service%2Cassign-role-service-connector)
 * [Configure AD authentication with PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-configure-sign-in-azure-ad-authentication)
 * [PostgreSQL authentication with managed identity](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-connect-with-managed-identity)
+* [A great article about workload identity federation](https://device-insight.com/en/developers-blog/use-azure-ad-workload-identity-for-pod-assigned-managed-identity-in-aks/)
