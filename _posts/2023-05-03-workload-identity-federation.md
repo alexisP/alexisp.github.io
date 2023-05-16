@@ -207,6 +207,8 @@ psql "host=$DATABASE_NAME.postgres.database.azure.com port=5432 dbname=demo user
 
 Now, you should be connected to the PostgreSQL server with `psql`, you need to type the following command to create the association between a local PostgreSQL role and your managed identity:
 
+> Execute `echo $USER_ASSIGNED_CLIENT_ID` to get `MANAGED_IDENTITY_CLIENT_ID` value
+
 ```
 SET aad_validate_oids_in_tenant = off;
 CREATE ROLE myuser WITH LOGIN PASSWORD '<MANAGED_IDENTITY_CLIENT_ID>' IN ROLE azure_ad_user;
