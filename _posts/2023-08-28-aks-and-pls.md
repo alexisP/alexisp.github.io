@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Expose your Kubernetes application and securely and privately to your customers/partners through Private Link Service"
+title:  "Expose your Kubernetes application securely and privately to your customers/partners through Private Link Service"
 author: alexisplantin
 comments: false
 categories: [ Azure, Kubernetes ]
@@ -117,7 +117,7 @@ Now, let's try to reach the same application but from a spoke which is not conne
 
 #### Annotate our Service
 
-To make our application available through Private Link Service, it is as easy as annotating our Service with specific annotations. So, let’s annotate our existing Service to make it exposable and consumable through a Private Link Service.
+To make our application available through Private Link Service, it is as easy as annotating our Service with specific annotations. So, let’s annotate our existing Service to make it exposable and consumable through a Private Link Service. The only required annotation is the `azure-pls-create` annotation which indicates that this service should be exposed using Private Link Service. I added an additional one just to specify the name of my PLS instance using `azure-pls-name` and that's all we need to do to make it exposed. Straightforward!
 
 <section class="row">
   <div class="col-md-1"></div>
